@@ -8,7 +8,7 @@ import webbrowser
 import urllib.parse
 from jinja2 import Template
 
-# Ask the user for the FTP directory path
+# Ask the user for the FTP directory path BBBBBBB
 dir_path = input('Enter the path to the FTP directory: ')
 
 # Initialize counters for total file and directory counts
