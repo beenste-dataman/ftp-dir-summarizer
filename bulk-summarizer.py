@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
 import webbrowser
+import urllib.parse
 from jinja2 import Template
 
 # Ask the user for the FTP directory path
@@ -50,6 +51,7 @@ for dirpath, dirnames, filenames in os.walk(dir_path):
         except FileNotFoundError:
             print(f"File not found: {filepath}")
 
+
 # Create a DataFrame from the file data
 df = pd.DataFrame(file_data)
 df['filetype'] = df['name'].apply(lambda x: os.path.splitext(x)[1])
@@ -57,63 +59,55 @@ df['filetype'] = df['name'].apply(lambda x: os.path.splitext(x)[1])
 # Create a DataFrame from the directory data
 df_dirs = pd.DataFrame(dir_data)
 
+# Filter out files with blank extensions
+df = df[df['filetype'] != '']
+
 # Generate summary statistics
 summary = pd.DataFrame({
-    'Total file count': [file_count],
-    'Total directory count': [dir_count],
+    'Total file count': [len(df)],
+    'Total directory count': [len(df_dirs)],
 })
 
-# Determine the number of top file types to display in the table
-top_file_types = 10
+# Generate the owner-to-filetype count table
+owner_filetype_count = df.groupby(['owner', 'filetype']).size().unstack().fillna(0).astype(int)
 
-# Filter the file types to include only the top N types
-top_file_type_counts = df['filetype'].value_counts().nlargest(top_file_types)
-
-# Create a DataFrame for the file type counts
-file_type_counts = pd.DataFrame(top_file_type_counts).reset_index()
-file_type_counts.columns = ['File Type', 'Count']
-
-# Sum the counts of less frequent file types into an "Other" category
-other_count = df['filetype'].value_counts().sum() - top_file_type_counts.sum()
-other_row = pd.DataFrame({'File Type': ['Other'], 'Count': [other_count]})
-file_type_counts = pd.concat([file_type_counts, other_row])
-
-# Create the table visualization for file type counts
-file_type_table = file_type_counts.to_html(index=False, classes='stats')
+# Check if the number of file types exceeds 20
+if owner_filetype_count.shape[1] > 20:
+    owner_filetype_count = owner_filetype_count.iloc[:, :20]  # Limit to 20 file types
 
 # Create graphs
 if not df.empty:
-  fig, ax = plt.subplots(figsize=(10,6))
-  df['modification_time'].apply(lambda x: time.strftime('%Y-%m', time.gmtime(x))).value_counts().sort_index().plot(ax=ax)
-  plt.title('Time series graph of file modification')
-  buf = BytesIO()
-  plt.savefig(buf, format='png')
-  buf.seek(0)
-  string = base64.b64encode(buf.read())
-  modification_times_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+    fig, ax = plt.subplots(figsize=(10,6))
+    df['modification_time'].apply(lambda x: time.strftime('%Y-%m', time.gmtime(x))).value_counts().sort_index().plot(ax=ax)
+    plt.title('Time series graph of file modification')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    modification_times_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-  fig, ax = plt.subplots(figsize=(10,6))
-  df['owner'].value_counts().plot(kind='bar', ax=ax)
-  plt.title('Bar graph showing the number of files owned by each user')
-  buf = BytesIO()
-  plt.savefig(buf, format='png')
-  buf.seek(0)
-  string = base64.b64encode(buf.read())
-  file_owners_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+    fig, ax = plt.subplots(figsize=(10,6))
+    df['owner'].value_counts().plot(kind='bar', ax=ax)
+    plt.title('Bar graph showing the number of files owned by each user')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    file_owners_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-  fig, ax = plt.subplots(figsize=(10,6))
-  df['filetype'].value_counts().plot(kind='bar', ax=ax)
-  plt.title('Bar graph showing the count of all files by file type')
-  buf = BytesIO()
-  plt.savefig(buf, format='png')
-  buf.seek(0)
-  string = base64.b64encode(buf.read())
-  file_counts_by_type_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+    fig, ax = plt.subplots(figsize=(10,6))
+    df['filetype'].value_counts().plot(kind='bar', ax=ax)
+    plt.title('Bar graph showing the count of all files by file type')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    file_counts_by_type_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 else:
-  modification_times_uri = ""
-  file_owners_uri = ""
-  print("DF is empty, something went wrong!")
-  
+    modification_times_uri = ""
+    file_owners_uri = ""
+    print("DF is empty, something went wrong!")
+
 # Define a Jinja2 template as a multiline string
 template = Template("""
 <html>
@@ -153,11 +147,10 @@ template = Template("""
             font-family: 'Courier New', monospace;
             margin: 20px;
             text-align: center;
-            width: 80%;
-            table-layout: fixed;
+            overflow-x: auto;
         }
-        .stats th, .stats td {
-            word-wrap: break-word;
+        table {
+            table-layout: fixed;
         }
     </style>
 </head>
@@ -176,7 +169,9 @@ template = Template("""
     <h2>Summary Statistics</h2>
     <div class="stats">{{ summary }}</div>
     <h2>Owner to Filetype Count</h2>
-    <div class="stats">{{ owner_filetype_count }}</div>
+    <div class="stats">
+        {{ owner_filetype_count }}
+    </div>
     <h2>Graphs</h2>
     <img src="{{ modification_times_uri }}" alt="Time series graph of file modification">
     <img src="{{ file_owners_uri }}" alt="Bar graph showing the number of files owned by each user">
@@ -186,10 +181,10 @@ template = Template("""
 """)
 
 # Render the template with the summary statistics and graphs
-output = template.render(total_files=file_count,
-                         total_dirs=dir_count,
+output = template.render(total_files=len(df),
+                         total_dirs=len(df_dirs),
                          summary=summary.to_html(),
-                         owner_filetype_count=file_type_table,
+                         owner_filetype_count=owner_filetype_count.to_html(classes='stats', index=False),
                          modification_times_uri=modification_times_uri,
                          file_owners_uri=file_owners_uri,
                          file_counts_by_type_uri=file_counts_by_type_uri)
