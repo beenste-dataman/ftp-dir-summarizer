@@ -8,7 +8,7 @@ import webbrowser
 import urllib.parse
 from jinja2 import Template
 
-# Ask the user for the FTP directory path BBBBBBB
+# Ask the user for the FTP directory path CCCCCC
 dir_path = input('Enter the path to the FTP directory: ')
 
 # Initialize counters for total file and directory counts
@@ -121,6 +121,7 @@ template = Template("""
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-width: 800px;  /* Set the minimum width of the HTML page */
         }
         h1, h2 {
             text-align: center;
@@ -147,7 +148,8 @@ template = Template("""
             font-family: 'Courier New', monospace;
             margin: 20px;
             text-align: center;
-            overflow-x: auto;
+            white-space: nowrap;  /* Prevent line breaks in the table */
+            overflow-x: auto;  /* Add horizontal scrollbar if necessary */
         }
         table {
             table-layout: fixed;
@@ -170,7 +172,9 @@ template = Template("""
     <div class="stats">{{ summary }}</div>
     <h2>Owner to Filetype Count</h2>
     <div class="stats">
-        {{ owner_filetype_count }}
+        <table>
+            {{ owner_filetype_count }}
+        </table>
     </div>
     <h2>Graphs</h2>
     <img src="{{ modification_times_uri }}" alt="Time series graph of file modification">
@@ -184,7 +188,7 @@ template = Template("""
 output = template.render(total_files=len(df),
                          total_dirs=len(df_dirs),
                          summary=summary.to_html(),
-                         owner_filetype_count=owner_filetype_count.to_html(classes='stats', index=False),
+                         owner_filetype_count=owner_filetype_count.to_html(index=False),
                          modification_times_uri=modification_times_uri,
                          file_owners_uri=file_owners_uri,
                          file_counts_by_type_uri=file_counts_by_type_uri)
