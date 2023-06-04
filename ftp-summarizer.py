@@ -40,12 +40,17 @@ for dirpath, dirnames, filenames in os.walk(dir_path):
         dir_data['owner'].append(stat.st_uid)
     for filename in filenames:
         filepath = os.path.join(dirpath, filename)
-        stat = os.stat(filepath)
-        file_data['name'].append(filename)
-        file_data['path'].append(filepath)
-        file_data['size'].append(stat.st_size)
-        file_data['modification_time'].append(stat.st_mtime)
-        file_data['owner'].append(stat.st_uid)
+        try:
+            stat = os.stat(filepath)
+            file_data['name'].append(filename)
+            file_data['path'].append(filepath)
+            file_data['size'].append(stat.st_size)
+            file_data['modification_time'].append(stat.st_mtime)
+            file_data['owner'].append(stat.st_uid)
+            file_count += 1
+        except FileNotFoundError:
+            print(f"File not found: {filepath}")
+
 
 # Create a DataFrame from the file data
 df = pd.DataFrame(file_data)
@@ -67,33 +72,41 @@ summary = pd.DataFrame({
 owner_filetype_count = df.groupby(['owner', 'filetype']).size().unstack().fillna(0).astype(int)
 
 # Create graphs
-fig, ax = plt.subplots(figsize=(10,6))
-df['modification_time'].apply(lambda x: time.strftime('%Y-%m', time.gmtime(x))).value_counts().sort_index().plot(ax=ax)
-plt.title('Time series graph of file modification')
-buf = BytesIO()
-plt.savefig(buf, format='png')
-buf.seek(0)
-string = base64.b64encode(buf.read())
-modification_times_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+if not df.empty:
+    fig, ax = plt.subplots(figsize=(10,6))
+    df['modification_time'].apply(lambda x: time.strftime('%Y-%m', time.gmtime(x))).value_counts().sort_index().plot(ax=ax)
+    plt.title('Time series graph of file modification')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    modification_times_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-fig, ax = plt.subplots(figsize=(10,6))
-df['owner'].value_counts().plot(kind='bar', ax=ax)
-plt.title('Bar graph showing the number of files owned by each user')
-buf = BytesIO()
-plt.savefig(buf, format='png')
-buf.seek(0)
-string = base64.b64encode(buf.read())
-file_owners_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+    fig, ax = plt.subplots(figsize=(10,6))
+    df['owner'].value_counts().plot(kind='bar', ax=ax)
+    plt.title('Bar graph showing the number of files owned by each user')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    file_owners_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-fig, ax = plt.subplots(figsize=(10,6))
-df['filetype'].value_counts().plot(kind='bar', ax=ax)
-plt.title('Bar graph showing the count of all files by file type')
-buf = BytesIO()
-plt.savefig(buf, format='png')
-buf.seek(0)
-string = base64.b64encode(buf.read())
-file_counts_by_type_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
-
+    fig, ax = plt.subplots(figsize=(10,6))
+    df['filetype'].value_counts().plot(kind='bar', ax=ax)
+    plt.title('Bar graph showing the count of all files by file type')
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    file_counts_by_type_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+else:
+    modification_times_uri = ""
+    file_owners_uri = ""
+    print("DF is empty, something went wrong!")   
+    
+    
+    
+    
 # Define a Jinja2 template as a multiline string
 template = Template("""
 <html>
