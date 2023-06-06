@@ -1,5 +1,5 @@
+#ccc
 
-#bbb
 import os
 import time
 import base64
@@ -104,6 +104,7 @@ else:
     modification_times_uri = ""
     file_owners_uri = ""
     print("DF is empty, something went wrong!")   
+    
 
 # Define a Jinja2 template as a multiline string
 template = Template("""
@@ -146,9 +147,8 @@ template = Template("""
             text-align: center;
         }
         .container {
-            width: fit-content;
-            max-width: 100%;
             overflow-x: auto;
+            padding: 0 20px; /* Adjust the padding as needed */
         }
     </style>
 </head>
