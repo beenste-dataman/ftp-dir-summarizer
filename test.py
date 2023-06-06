@@ -1,4 +1,4 @@
-#ccd
+#ccJ
 
 import os
 import time
@@ -147,9 +147,10 @@ template = Template("""
             margin: 20px;
             text-align: center;
         }
-        .container {
+        .owner-filetype-count {
             overflow-x: auto;
-            padding: 0 20px; /* Add padding to the left and right */
+            padding-left: 20px; /* Add padding to the left */
+            padding-right: 20px; /* Add padding to the right */
         }
     </style>
 </head>
@@ -169,7 +170,7 @@ template = Template("""
     <div class="stats">{{ summary }}</div>
     <h2>Owner to Filetype Count</h2>
     <div class="stats">
-        <div class="container">
+        <div class="owner-filetype-count">
             {{ owner_filetype_count }}
         </div>
     </div>
