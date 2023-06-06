@@ -1,4 +1,4 @@
-#ccc
+#ccd
 
 import os
 import time
@@ -119,6 +119,7 @@ template = Template("""
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 0 20px; /* Add padding to the left and right */
         }
         h1, h2 {
             text-align: center;
@@ -148,7 +149,7 @@ template = Template("""
         }
         .container {
             overflow-x: auto;
-            padding: 0 20px; /* Adjust the padding as needed */
+            padding: 0 20px; /* Add padding to the left and right */
         }
     </style>
 </head>
