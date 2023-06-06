@@ -1,5 +1,5 @@
-#aaaa
 
+#bbb
 import os
 import time
 import base64
@@ -57,11 +57,11 @@ for dirpath, dirnames, filenames in os.walk(dir_path):
 df = pd.DataFrame(file_data)
 df['filetype'] = df['name'].apply(lambda x: os.path.splitext(x)[1])
 
-# Filter out files with blank extensions
-df = df[df['filetype'] != '']
-
 # Create a DataFrame from the directory data
 df_dirs = pd.DataFrame(dir_data)
+
+# Filter out files with blank extensions
+df = df[df['filetype'] != '']
 
 # Generate summary statistics
 summary = pd.DataFrame({
@@ -72,13 +72,9 @@ summary = pd.DataFrame({
 # Generate the owner-to-filetype count table
 owner_filetype_count = df.groupby(['owner', 'filetype']).size().unstack().fillna(0).astype(int)
 
-# Check if the number of file types exceeds 20
-if owner_filetype_count.shape[1] > 20:
-    owner_filetype_count = owner_filetype_count.iloc[:, :20]  # Limit to 20 file types
-
 # Create graphs
 if not df.empty:
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10,6))
     df['modification_time'].apply(lambda x: time.strftime('%Y-%m', time.gmtime(x))).value_counts().sort_index().plot(ax=ax)
     plt.title('Time series graph of file modification')
     buf = BytesIO()
@@ -87,7 +83,7 @@ if not df.empty:
     string = base64.b64encode(buf.read())
     modification_times_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10,6))
     df['owner'].value_counts().plot(kind='bar', ax=ax)
     plt.title('Bar graph showing the number of files owned by each user')
     buf = BytesIO()
@@ -96,11 +92,8 @@ if not df.empty:
     string = base64.b64encode(buf.read())
     file_owners_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    filetype_counts = df['filetype'].value_counts()
-    if len(filetype_counts) > 20:
-        filetype_counts = filetype_counts[:20]
-    filetype_counts.plot(kind='bar', ax=ax)
+    fig, ax = plt.subplots(figsize=(10,6))
+    df['filetype'].value_counts().plot(kind='bar', ax=ax)
     plt.title('Bar graph showing the count of all files by file type')
     buf = BytesIO()
     plt.savefig(buf, format='png')
@@ -110,7 +103,7 @@ if not df.empty:
 else:
     modification_times_uri = ""
     file_owners_uri = ""
-    file_counts_by_type_uri = ""
+    print("DF is empty, something went wrong!")   
 
 # Define a Jinja2 template as a multiline string
 template = Template("""
@@ -147,13 +140,15 @@ template = Template("""
             margin-right: auto;
             width: 70%;
         }
-        .stats-container {
-            overflow-x: auto;
-        }
         .stats {
             font-family: 'Courier New', monospace;
             margin: 20px;
             text-align: center;
+        }
+        .container {
+            width: fit-content;
+            max-width: 100%;
+            overflow-x: auto;
         }
     </style>
 </head>
@@ -172,8 +167,8 @@ template = Template("""
     <h2>Summary Statistics</h2>
     <div class="stats">{{ summary }}</div>
     <h2>Owner to Filetype Count</h2>
-    <div class="stats-container">
-        <div class="stats">
+    <div class="stats">
+        <div class="container">
             {{ owner_filetype_count }}
         </div>
     </div>
@@ -189,7 +184,7 @@ template = Template("""
 output = template.render(total_files=len(df),
                          total_dirs=len(df_dirs),
                          summary=summary.to_html(),
-                         owner_filetype_count=owner_filetype_count.to_html(index=False),
+                         owner_filetype_count=owner_filetype_count.to_html(),
                          modification_times_uri=modification_times_uri,
                          file_owners_uri=file_owners_uri,
                          file_counts_by_type_uri=file_counts_by_type_uri)
