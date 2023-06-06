@@ -1,3 +1,5 @@
+#aaaa
+
 import os
 import time
 import base64
@@ -51,16 +53,15 @@ for dirpath, dirnames, filenames in os.walk(dir_path):
         except FileNotFoundError:
             print(f"File not found: {filepath}")
 
-
 # Create a DataFrame from the file data
 df = pd.DataFrame(file_data)
 df['filetype'] = df['name'].apply(lambda x: os.path.splitext(x)[1])
 
-# Create a DataFrame from the directory data
-df_dirs = pd.DataFrame(dir_data)
-
 # Filter out files with blank extensions
 df = df[df['filetype'] != '']
+
+# Create a DataFrame from the directory data
+df_dirs = pd.DataFrame(dir_data)
 
 # Generate summary statistics
 summary = pd.DataFrame({
@@ -77,7 +78,7 @@ if owner_filetype_count.shape[1] > 20:
 
 # Create graphs
 if not df.empty:
-    fig, ax = plt.subplots(figsize=(10,6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     df['modification_time'].apply(lambda x: time.strftime('%Y-%m', time.gmtime(x))).value_counts().sort_index().plot(ax=ax)
     plt.title('Time series graph of file modification')
     buf = BytesIO()
@@ -86,7 +87,7 @@ if not df.empty:
     string = base64.b64encode(buf.read())
     modification_times_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-    fig, ax = plt.subplots(figsize=(10,6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     df['owner'].value_counts().plot(kind='bar', ax=ax)
     plt.title('Bar graph showing the number of files owned by each user')
     buf = BytesIO()
@@ -95,8 +96,11 @@ if not df.empty:
     string = base64.b64encode(buf.read())
     file_owners_uri = 'data:image/png;base64,' + urllib.parse.quote(string)
 
-    fig, ax = plt.subplots(figsize=(10,6))
-    df['filetype'].value_counts().plot(kind='bar', ax=ax)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    filetype_counts = df['filetype'].value_counts()
+    if len(filetype_counts) > 20:
+        filetype_counts = filetype_counts[:20]
+    filetype_counts.plot(kind='bar', ax=ax)
     plt.title('Bar graph showing the count of all files by file type')
     buf = BytesIO()
     plt.savefig(buf, format='png')
@@ -106,7 +110,7 @@ if not df.empty:
 else:
     modification_times_uri = ""
     file_owners_uri = ""
-    print("DF is empty, something went wrong!")
+    file_counts_by_type_uri = ""
 
 # Define a Jinja2 template as a multiline string
 template = Template("""
@@ -144,7 +148,6 @@ template = Template("""
             width: 70%;
         }
         .stats-container {
-            width: fit-content;
             overflow-x: auto;
         }
         .stats {
